@@ -136,7 +136,9 @@ def getTriCount():
     tris = 0
     for e in bpy.context.scene.objects:
         if e.type == "MESH":
-            count += len(e.data.loop_triangle_polygons)
+            if e.hide_viewport or e.hide_get():
+                continue
+            tris += len(e.data.loop_triangle_polygons)
     return f"{tris:,d}"
     
 def getActiveMeshTriCount():
@@ -368,7 +370,7 @@ def updatePresence():
             if prefs.enableDetails:
                 if prefs.detailsType == "literal":
                     if prefs.displayFileName and getFileName():
-                        detailsText = f"{getFileName()}.blend"
+                        detailsText = f"{getFileName()}"
                     else:
                         detailsText = "Working on a project"
                 else:
