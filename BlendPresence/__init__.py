@@ -96,9 +96,9 @@ def getZenithText():
             t = "NONE"
 
         if t == "NONE" or t == "EMPTY":
-            s = "🔺: " + getPolyCount() + " | 🦴: " + getBoneCount()
+            s = "🔺: " + getTriCount() + " | 🦴: " + getBoneCount()
         elif t == "MESH":
-            s = o + " | 🔺: " + getActiveMeshPolyCount()
+            s = o + " | 🔺: " + getActiveMeshTriCount()
         elif t == "ARMATURE":
             s = o + " | 🦴: " + getActiveArmatureBoneCount()
         elif t == "CURVE" or t == "CURVES": 
@@ -118,12 +118,6 @@ def getCurrentScene():
 
 def getObjectCount():
     return f"{len(bpy.context.selectable_objects):,d} total objects"
-    
-def getActiveMeshPolyCount():
-    if bpy.context.active_object.type == "MESH":
-        return f"{len(bpy.context.active_object.data.polygons):,d}"
-    else:
-        return "Null"
 
 def getPolyCount():
     count = 0
@@ -131,6 +125,26 @@ def getPolyCount():
         if e.type == "MESH":
             count += len(e.data.polygons)
     return f"{count:,d}"
+
+def getActiveMeshPolyCount():
+    if bpy.context.active_object.type == "MESH":
+        return f"{len(bpy.context.active_object.data.polygons):,d}"
+    else:
+        return "Null"
+    
+def getTriCount():
+    tris = 0
+    for e in bpy.context.scene.objects:
+        if e.type == "MESH":
+            count += len(e.data.loop_triangle_polygons)
+    return f"{tris:,d}"
+    
+def getActiveMeshTriCount():
+    if bpy.context.active_object.type == "MESH":
+        mesh = bpy.context.active_object.data
+        return f"{len(mesh.loop_triangle_polygons):,d}"
+    else:
+        return "Null"
 
 def getActiveArmatureBoneCount():
     if bpy.context.active_object.type == "ARMATURE":
