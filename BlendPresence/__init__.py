@@ -85,6 +85,33 @@ def evalCustomUrl(str):
             
     return re.match(regex, str) is not None
 
+def getZenithText():
+    s = "  "
+
+    try:
+        o = getActiveObject()
+        if o != "Null":
+            t = bpy.context.active_object.type
+        else:
+            t = "NONE"
+
+        if t == "NONE" or t == "EMPTY":
+            s = "🔺: " + getPolyCount() + " | 🦴: " + getBoneCount()
+        elif t == "MESH":
+            s = o + " | 🔺: " + getActiveMeshPolyCount()
+        elif t == "ARMATURE":
+            s = o + " | 🦴: " + getActiveArmatureBoneCount()
+        elif t == "CURVE" or t == "CURVES": 
+            s = o + " | 🧬: " + getActiveCurveSplineCount()
+        else:
+            s = o + " | Zeni using a " + t + "???"
+    except AttributeError as e:
+        print ("[BP] ATTR ERROR: " + e)
+    except KeyError as e:
+        print ("[BP] KEY ERROR: " + e)
+
+    return s
+
 def getCurrentScene():
     s = bpy.context.scene.name
     return "Default Scene" if s == "Scene" else f"Scene {s}"
@@ -92,19 +119,37 @@ def getCurrentScene():
 def getObjectCount():
     return f"{len(bpy.context.selectable_objects):,d} total objects"
     
+def getActiveMeshPolyCount():
+    if bpy.context.active_object.type == "MESH":
+        return f"{len(bpy.context.active_object.data.polygons):,d}"
+    else:
+        return "Null"
+
 def getPolyCount():
     count = 0
     for e in bpy.context.scene.objects:
         if e.type == "MESH":
             count += len(e.data.polygons)
-    return f"{count:,d} total polys"
+    return f"{count:,d}"
+
+def getActiveArmatureBoneCount():
+    if bpy.context.active_object.type == "ARMATURE":
+        return f"{len(bpy.context.active_object.data.bones):,d}"
+    else:
+        return "Null"
+    
+def getActiveCurveSplineCount():
+    if bpy.context.active_object.type == "CURVE":
+        return f"{len(bpy.context.active_object.data.splines):,d}"
+    else:
+        return "Null"
 
 def getBoneCount():
     count = 0
     for e in bpy.context.scene.objects:
         if e.type == "ARMATURE":
             count += len(e.data.bones)
-    return f"Working with {count:,d} bones"
+    return f"{count:,d}"
     
 def getMatCount():
     return f"{len(bpy.data.materials):,d} total materials"
@@ -116,7 +161,7 @@ def getFramesAnimated():
         print(k)
         return f"{math.floor(k[-1]):,d} frames animated"
     else:
-        return "  "
+        return "Null"
         
 def getCurrentFrame():
     i = "Viewing frame"
@@ -175,7 +220,7 @@ def getActiveObject():
     if bpy.context.active_object:
         return bpy.context.active_object.name
     else:
-        return "  "
+        return "Null"
 
 ######## PRESENCE ########
 def updatePresence():
@@ -266,8 +311,7 @@ def updatePresence():
                         smallIconText = spaces[i][0]
                         smallIcon = spaces[i][1]
         
-        # BUTTONS
-        
+        # BUTTONS  
         if prefs.displayBtn1 and prefs.button1Label and evalCustomUrl(prefs.button1Url):
             buttonList.append({"label": prefs.button1Label, "url": prefs.button1Url})
         if prefs.displayBtn2 and prefs.button2Label and evalCustomUrl(prefs.button2Url):
@@ -321,6 +365,7 @@ def updatePresence():
             # Viewport State      
             displayTypes = {
                 "custom" : evalCustomText,
+                "zeni" : getZenithText,
                 "scene" : getCurrentScene,
                 "obj" : getObjectCount,
                 "poly" : getPolyCount,
@@ -513,6 +558,7 @@ class blendPresence(bpy.types.AddonPreferences):
     stateType: bpy.props.EnumProperty(
         name = "Display",
         items = (
+            ("zeni", "Zenith", "Displays the total amount of objects and bones in the scene. If an object is selected, it will display the name of the object and the amount of polygons it has"),
             ("anim", "Frames Animated", "Displays the frame number that holds the last keyframe from all given actions"),
             ("poly", "Polygon Count", "Display the total amount of objects in the current scene"),
             ("bone", "Bone Count", "Display the total amount of armature bones in the current scene"),
