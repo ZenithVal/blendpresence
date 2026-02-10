@@ -11,9 +11,9 @@ from .pypresence import exceptions
 
 
 bl_info = {
-    "name": "BlendPresence",
+    "name": "BlendPresence (Zeni Fork)",
     "description": "Discord Rich Presence for Blender",
-    "author": "Abrasic",
+    "author": "Abrasic, modified by ZenithVal",
     "version": (1, 8, 2),
     "blender": (2, 93, 9),
     "category": "System",
@@ -96,6 +96,33 @@ def evalCustomUrl(str):
             
     return re.match(regex, str) is not None
 
+def getZenithText():
+    s = "  "
+
+    try:
+        o = getActiveObject()
+        if o != "Null":
+            t = bpy.context.active_object.type
+        else:
+            t = "NONE"
+
+        if t == "NONE" or t == "EMPTY":
+            s = "🔺: " + getTriCount() + " | 🦴: " + getBoneCount()
+        elif t == "MESH":
+            s = o + " | 🔺: " + getActiveMeshTriCount()
+        elif t == "ARMATURE":
+            s = o + " | 🦴: " + getActiveArmatureBoneCount()
+        elif t == "CURVE" or t == "CURVES": 
+            s = o + " | 🧬: " + getActiveCurveSplineCount()
+        else:
+            s = o + " | Zeni using a " + t + "???"
+    except AttributeError as e:
+        print ("[BP] ATTR ERROR: " + e)
+    except KeyError as e:
+        print ("[BP] KEY ERROR: " + e)
+
+    return s
+
 def getCurrentScene():
     s = bpy.context.scene.name
     return "Default Scene" if s == "Scene" else f"Scene {s}"
@@ -110,12 +137,39 @@ def getPolyCount():
             count += len(e.data.polygons)
     return f"{count:,d} total polys"
 
+def getTriCount():
+    tris = 0
+    for e in bpy.context.scene.objects:
+        if e.type == "MESH":
+            if e.hide_viewport or e.hide_get():
+                continue
+            tris += len(e.data.loop_triangle_polygons)
+    return f"{tris:,d}"
+
+def getActiveMeshTriCount():
+    if bpy.context.active_object.type == "MESH":
+        mesh = bpy.context.active_object.data
+        return f"{len(mesh.loop_triangle_polygons):,d}"
+    else:
+        return "Null"
+
+def getActiveArmatureBoneCount():
+    if bpy.context.active_object.type == "ARMATURE":
+        return f"{len(bpy.context.active_object.data.bones):,d}"
+    else:
+        return "Null"
+def getActiveCurveSplineCount():
+    if bpy.context.active_object.type == "CURVE":
+        return f"{len(bpy.context.active_object.data.splines):,d}"
+    else:
+        return "Null"
+    
 def getBoneCount():
     count = 0
     for e in bpy.context.scene.objects:
         if e.type == "ARMATURE":
             count += len(e.data.bones)
-    return f"Working with {count:,d} bones"
+    return f"{count:,d}"
     
 def getMatCount():
     return f"{len(bpy.data.materials):,d} total materials"
@@ -189,7 +243,7 @@ def getActiveObject():
     if bpy.context.active_object:
         return bpy.context.active_object.name
     else:
-        return "  "
+        return "Null"
 
 ######## PRESENCE ########
 def updatePresence():
@@ -339,7 +393,7 @@ def updatePresence():
                         else:
                             detailsText = f"{getFileName()}"
                     else:
-                        detailsText = "Working on a project"
+                        detailsText = evalCustomText(prefs.fileNameFallback)
                 else:
                     detailsText = evalCustomText(prefs.detailsCustomText)
             else:
@@ -348,6 +402,7 @@ def updatePresence():
             # Viewport State      
             displayTypes = {
                 "custom" : evalCustomText,
+                "zeni" : getZenithText,
                 "scene" : getCurrentScene,
                 "obj" : getObjectCount,
                 "poly" : getPolyCount,
@@ -359,7 +414,7 @@ def updatePresence():
                 "active" : getActiveObject,
             }
 
-            displayCycle = ["custom","scene","obj","poly","bone","mat","frame","anim","size","active"]
+            displayCycle = ["custom","zeni","scene","obj","poly","bone","mat","frame","anim","size","active"]
         
         if not bpi.isRendering: # Render state will always override this
             try:
@@ -582,6 +637,7 @@ class blendPresence(bpy.types.AddonPreferences):
     stateType: bpy.props.EnumProperty(
         name = "Display",
         items = (
+             ("zeni", "Zenith", "Displays the total amount of objects and bones in the scene. If an object is selected, it will display the name of the object and the amount of polygons it has"),
             ("anim", "Frames Animated", "Displays the frame number that holds the last keyframe from all given actions"),
             ("poly", "Polygon Count", "Display the total amount of objects in the current scene"),
             ("bone", "Bone Count", "Display the total amount of armature bones in the current scene"),
